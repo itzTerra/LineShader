@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CurveArt</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous" />
+</head>
+
+<body>
+  <div class="container-xl">
+    <div class="d-flex justify-content-between my-4">
+      <div style="width: 512px">
+        <div class="input-group">
+          <input type="file" id="imageInput" accept="image/*" class="form-control" />
+          <button onclick="uploadImg()" class="btn btn-primary">Upload</button>
+        </div>
+        <div class="bg-body-secondary" id="imagePreview" style="height: 512px;"></div>
+      </div>
+      <div style="width: 512px">
+        <div class="d-flex justify-content-between">
+          <button onclick="processImg()" class="btn btn-success" id="processBtn" disabled>Process</button>
+          <button onclick="downloadImg()" class="btn btn-info" id="downloadBtn" disabled>Download</button>
+        </div>
+        <div class="bg-body-secondary" id="imageResult" style="width: 512px;height: 512px;"></div>
+        <canvas class="d-none" id="resultCanvas"></canvas>
+      </div>
+    </div>
+    <hr>
+    <div>
+      <form onsubmit="return generateArt()" id="generateForm">
+        <div class="d-flex gap-3">
+          <div>
+            <label for="" class="form-label">Source</label>
+            <select name="source" class="form-select">
+              <option value="upload">Uploaded</option>
+              <option value="process">Processed</option>
+            </select>
+          </div>
+          <div>
+            <label for="" class="form-label">Resolution multiplier</label>
+            <input type="number" name="resolution" class="form-control" value="8">
+          </div>
+          <div>
+            <label for="" class="form-label">Color</label>
+            <input type="color" name="color" class="form-control form-control-color" value="#66ff22">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Generate</button>
+      </form>
+    </div>
+    <div class="d-flex justify-content-center my-4" id="art">
+      
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/camanjs/4.0.0/caman.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
+  <script src="image.js"></script>
+  <script src="art.js"></script>
+</body>
+
+</html>

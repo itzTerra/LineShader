@@ -55,12 +55,11 @@ function generateArt() {
   return false;
 }
 
-const maxRadius = 16;
+const maxRadius = 32;
 const lineWidth = 1;
-const branchiness = 0.3;
+const branchiness = 0.6;
 const colorStrength = 0.5;
-const maxDepth = 10;
-let curDepth = 0;
+const maxDepth = 20;
 
 function drawSVG(elID, settings, image) {
   artDiv.innerHTML = "";
@@ -84,7 +83,7 @@ function drawSVG(elID, settings, image) {
   const cx = settings.width / 2;
   const cy = settings.height / 2;
 
-  const tree = new Branch(cx, cy);
+  const tree = new Branch(cx, cy, 0);
   tree.grow();
   tree.draw(center);
 
@@ -94,20 +93,18 @@ function drawSVG(elID, settings, image) {
 }
 
 class Branch {
-  constructor(x, y) {
+  constructor(x, y, depth) {
     this.x = x;
     this.y = y;
     this.branches = [];
-    this.depth = 0;
+    this.depth = depth;
   }
 
   grow() {
-    this.depth++;
-    console.log(this.depth);
     if (this.depth >= maxDepth) return;
 
     const newBranchCount = Math.max(
-      Math.floor(branchiness * Math.random() * 10),
+      Math.floor(branchiness * Math.random() * 4),
       1
     );
 
@@ -116,8 +113,12 @@ class Branch {
       const randomAngle = Math.random() * Math.PI * 2;
 
       // Calculate random displacements along x and y axes
-      const deltaX = Math.cos(randomAngle) * maxRadius;
-      const deltaY = Math.sin(randomAngle) * maxRadius;
+      const deltaX = Math.cos(randomAngle) * maxRadius * Math.random();
+      const deltaY = Math.sin(randomAngle) * maxRadius * Math.random();
+
+      const newBranch = new Branch(this.x+deltaX, this.y+deltaY, this.depth+1)
+      newBranch.grow()
+      this.branches.push(newBranch)
     }
   }
 

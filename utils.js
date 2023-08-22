@@ -35,7 +35,7 @@ function calculateIntegralImage(pixels, width, height) {
     for (let x = 0; x < width; x++) {
       let index = x + y * width;
 
-      let sum = pixels[index*4];
+      let sum = pixels[index * 4];
       if (x > 0) sum += integral[index - 1];
       if (y > 0) sum += integral[index - width];
       if (x > 0 && y > 0) sum -= integral[index - 1 - width];
@@ -45,4 +45,18 @@ function calculateIntegralImage(pixels, width, height) {
   }
 
   return integral;
+}
+
+function hexToRgb(hex) {
+  if (!hex) return;
+  // Remove the hash character if it's included
+  hex = hex.replace("#", "");
+
+  // Convert the hexadecimal values to integers
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  // Return the RGB values as an object
+  return { r, g, b };
 }

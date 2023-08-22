@@ -3,31 +3,28 @@ const artDiv = document.getElementById("art");
 
 // IN DEV
 originalImg = document.createElement("img");
-originalImg.src = "img.png";
+originalImg.src = "test.png";
 
 var art;
 
 function getImg(sourceType, settings) {
-  const image = {
-    data: null,
-    url: null,
-  };
+  const image = {};
 
-  const sizeX = originalImg.width * settings.resolution;
-  const sizeY = originalImg.height * settings.resolution;
+  const sizeX = settings.width;
+  const sizeY = settings.height;
 
   if (sourceType == "upload" && originalImg) {
-    resultCanvas.width = sizeX
-    resultCanvas.height = sizeY
+    resultCanvas.width = sizeX;
+    resultCanvas.height = sizeY;
     const context = resultCanvas.getContext("2d");
     context.drawImage(originalImg, 0, 0, sizeX, sizeY);
 
     image.data = context.getImageData(0, 0, sizeX, sizeY);
-    image.base64 = resultCanvas.toDataURL()
+    image.base64 = resultCanvas.toDataURL();
     image.url = originalImg.src;
   } else if (processedImg) {
     image.data = processedImg.imageData;
-    image.base64 = processedImg.toBase64()
+    image.base64 = processedImg.toBase64();
     image.url = processedImg.imageUrl;
   }
 
@@ -35,11 +32,30 @@ function getImg(sourceType, settings) {
   return image;
 }
 
+function getImages(settings) {
+    const images = []
+    originalImg = document.createElement("img");
+    originalImg.src = "img/0.png";
+    images.push(getImg("upload", settings))
+    originalImg.src = "img/1.png";
+    images.push(getImg("upload", settings))
+
+  return images;
+}
+
 function getSettings(formData) {
   return new ArtSettings({
+    width: Number(formData.get("width")),
+    height: Number(formData.get("height")),
+    showImage: Boolean(formData.get("showImage")),
+    bg: formData.get("bg"),
     color: formData.get("color"),
-    resolution: formData.get("resolution"),
-    maxAgents: 1000,
+    opacity: Number(formData.get("opacity")),
+    maxAgents: Number(formData.get("maxAgents")),
+    startAgents: Number(formData.get("startAgents")),
+    precision: Number(formData.get("precision")),
+    colorRadius: Number(formData.get("colorRadius")),
+    vanishRate: Number(formData.get("vanishRate")),
   });
 }
 
@@ -48,15 +64,15 @@ function generateArt() {
     const formData = new FormData(generateForm);
 
     const settings = getSettings(formData);
-    const img = getImg(formData.get("source"), settings);
+    const images = getImages(settings);
 
     if (art) {
       artDiv.innerHTML = "";
-      art.p5.noLoop()
+      art.p5.remove();
       art = null;
     }
 
-    art = new CurveArt("art", settings, img, true);
+    art = new CurveArt("art", settings, images, true);
   } catch (err) {
     console.error(err);
   }
@@ -66,4 +82,8 @@ function generateArt() {
 
 function playPause() {
   art.playPause();
+}
+
+function switchImage() {
+  art.switchImage();
 }

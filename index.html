@@ -41,17 +41,58 @@
             </select>
           </div>
           <div>
-            <label for="" class="form-label">Resolution multiplier</label>
-            <input type="number" name="resolution" class="form-control" value="8">
+            <label for="" class="form-label">Width</label>
+            <input type="number" name="width" class="form-control" value="1000">
           </div>
+          <div>
+            <label for="" class="form-label">Height</label>
+            <input type="number" name="height" class="form-control" value="800">
+          </div>
+          <div class="form-check">
+            <input type="checkbox" name="showImage" class="form-check-input">
+            <label for="" class="form-check-label">Show Image</label>
+          </div>
+        </div>
+        <div class="d-flex gap-3 my-3">
           <div>
             <label for="" class="form-label">Color</label>
             <input type="color" name="color" class="form-control form-control-color" value="#66ff22">
           </div>
+          <div>
+            <label for="" class="form-label">Opacity</label>
+            <input type="number" name="opacity" class="form-control" value="100">
+          </div>
+          <div>
+            <label for="" class="form-label">Background Color</label>
+            <input type="color" name="bg" class="form-control form-control-color" value="#333333">
+          </div>
+          <div>
+            <label for="" class="form-label">Start Agents</label>
+            <input type="number" name="startAgents" class="form-control" value="10">
+          </div>
+          <div>
+            <label for="" class="form-label">Max Agents</label>
+            <input type="number" name="maxAgents" class="form-control" value="1000">
+          </div>
+          <div>
+            <label for="" class="form-label">Precision</label>
+            <input type="number" name="precision" class="form-control" value="2">
+          </div>
+          <div>
+            <label for="" class="form-label">Color pickup radius (px)</label>
+            <input type="number" name="colorRadius" class="form-control" value="10">
+          </div>
+          <div>
+            <label for="" class="form-label">Vanish rate</label>
+            <input type="number" name="vanishRate" class="form-control" value="1">
+          </div>
         </div>
-        <button type="submit" class="btn btn-primary mt-3">Generate</button>
+        <div class="d-flex gap-3 my-3">
+          <button type="submit" class="btn btn-primary">Generate</button>
+          <button onclick="playPause()" type="button" class="btn btn-info">Pause</button>
+          <button onclick="switchImage()" type="button" class="btn btn-info">Switch Image</button>
+        </div>
       </form>
-      <button onclick="playPause()" type="button" class="btn btn-info">Pause</button>
     </div>
     <div class="d-flex justify-content-center my-4" id="art">
     </div>
@@ -61,7 +102,9 @@
     integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm"
     crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/camanjs/4.0.0/caman.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js" integrity="sha512-bcfltY+lNLlNxz38yBBm/HLaUB1gTV6I0e+fahbF9pS6roIdzUytozWdnFV8ZnM6cSAG5EbmO0ag0a/fLZSG4Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"
+    integrity="sha512-bcfltY+lNLlNxz38yBBm/HLaUB1gTV6I0e+fahbF9pS6roIdzUytozWdnFV8ZnM6cSAG5EbmO0ag0a/fLZSG4Q=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="utils.js"></script>
   <script src="image.js"></script>
   <script src="Art.js"></script>

@@ -1,7 +1,7 @@
 const input = document.getElementById("imageInput");
 const preview = document.getElementById("imagePreview");
 const resultDiv = document.getElementById("imageResult");
-const resultCanvas = document.getElementById("resultCanvas")
+const resultCanvas = document.getElementById("resultCanvas");
 const processBtn = document.getElementById("processBtn");
 const downloadBtn = document.getElementById("downloadBtn");
 var originalImg;
@@ -37,15 +37,6 @@ function uploadImg() {
   processBtn.disabled = false;
 }
 
-function downloadImg() {
-  if (!processedImg) return;
-
-  let a = document.createElement("a");
-  a.href = processedImg.toBase64();
-  a.download = originalName;
-  a.click();
-}
-
 function processImg() {
   const newCanvas = document.createElement("canvas");
   newCanvas.style.maxWidth = "100%";
@@ -60,4 +51,13 @@ function processImg() {
     });
   });
   downloadBtn.disabled = false;
+}
+
+function downloadImg() {
+  if (!processedImg) return;
+
+  let a = document.createElement("a");
+  a.href = processedImg.toBase64();
+  a.download = originalName;
+  a.click();
 }

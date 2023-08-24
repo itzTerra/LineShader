@@ -25,6 +25,60 @@ function randint(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function getImageIntensityMap(pixels, width, height) {
+  const intensityMap = new Float32Array(width * height);
+
+  for (let i = 0; i < intensityMap.length; i++) {
+    intensityMap[i] = pixels[i * 4] / 255.0;
+  }
+
+  return intensityMap;
+}
+
+function getIntensityMapInRadius(
+  imageIntensityMap,
+  x,
+  y,
+  radius,
+  width,
+  height
+) {
+  const cx = Math.floor(x);
+  const cy = Math.floor(y);
+  const intensityMap = [];
+  let total = 0;
+
+  for (let y = cy - radius; y <= cy + radius; y++) {
+    for (let x = cx - radius; x <= cx + radius; x++) {
+      if (x >= 0 && x < width && y >= 0 && y < height) {
+        const index = y * width + x;
+        intensityMap.push(imageIntensityMap[index]);
+        total += imageIntensityMap[index];
+      } else {
+        intensityMap.push(0);
+      }
+    }
+  }
+
+  return { map: intensityMap, total: total };
+}
+
+function getWeightedIndex(weights, total = null) {
+  if (total === null) {
+    total = weights.reduce((sum, weight) => sum + weight, 0);
+  }
+  let randomBreakpoint = Math.random() * total;
+
+  for (let i = 0; i < weights.length; i++) {
+    if (randomBreakpoint < weights[i]) {
+      return i;
+    }
+    randomBreakpoint -= weights[i];
+  }
+
+  return Math.floor(Math.random() * weights.length);
+}
+
 function calculateIntegralImage(pixels, width, height) {
   let integral = [];
   for (let i = 0; i < width * height; i++) {
@@ -36,6 +90,26 @@ function calculateIntegralImage(pixels, width, height) {
       let index = x + y * width;
 
       let sum = pixels[index * 4];
+      if (x > 0) sum += integral[index - 1];
+      if (y > 0) sum += integral[index - width];
+      if (x > 0 && y > 0) sum -= integral[index - 1 - width];
+
+      integral[index] = sum;
+    }
+  }
+
+  return integral;
+}
+
+function calculateIntegralImageFromMap(intensityMap, width, height) {
+  const l = intensityMap.length;
+  let integral = new Float32Array(l);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let index = x + y * width;
+
+      let sum = intensityMap[index];
       if (x > 0) sum += integral[index - 1];
       if (y > 0) sum += integral[index - width];
       if (x > 0 && y > 0) sum -= integral[index - 1 - width];

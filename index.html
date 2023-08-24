@@ -4,93 +4,128 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CurveArt</title>
+  <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
+  <title>LineShader</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous" />
+
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
   <div class="container-xl">
     <div class="d-flex justify-content-between my-4">
-      <div style="width: 512px">
+      <div style="width: 400px">
         <div class="input-group">
           <input type="file" id="imageInput" accept="image/*" class="form-control" />
           <button onclick="uploadImg()" class="btn btn-primary">Upload</button>
         </div>
-        <div class="bg-body-secondary" id="imagePreview" style="height: 512px;"></div>
+        <div class="bg-body-secondary" id="imagePreview" style="height: 200px; max-height: 200px; overflow-y: auto;"></div>
       </div>
-      <div style="width: 512px">
+      <div style="width: 400px">
         <div class="d-flex justify-content-between">
           <button onclick="processImg()" class="btn btn-success" id="processBtn" disabled>Process</button>
           <button onclick="downloadImg()" class="btn btn-info" id="downloadBtn" disabled>Download</button>
         </div>
-        <div class="bg-body-secondary" id="imageResult" style="width: 512px;height: 512px;"></div>
+        <div class="bg-body-secondary" id="imageResult" style="width: 400px;height: 200px; overflow-y: auto;"></div>
         <canvas class="d-none" id="resultCanvas"></canvas>
       </div>
     </div>
     <hr>
     <div class="d-flex gap-3 align-items-end">
-      <form onsubmit="return generateArt()" id="generateForm">
+      <form id="generateForm">
         <div class="d-flex gap-3">
           <div>
             <label for="" class="form-label">Source</label>
-            <select name="source" class="form-select">
+            <select name="source" class="form-select form-select-sm">
               <option value="upload">Uploaded</option>
               <option value="process">Processed</option>
             </select>
           </div>
           <div>
             <label for="" class="form-label">Width</label>
-            <input type="number" name="width" class="form-control" value="1000">
+            <input type="number" name="width" class="form-control form-control-sm" value="1000">
           </div>
           <div>
             <label for="" class="form-label">Height</label>
-            <input type="number" name="height" class="form-control" value="800">
+            <input type="number" name="height" class="form-control form-control-sm" value="800">
           </div>
           <div class="form-check">
             <input type="checkbox" name="showImage" class="form-check-input">
             <label for="" class="form-check-label">Show Image</label>
           </div>
+          <div>
+            <label for="" class="form-label">Frame Rate</label>
+            <input type="number" name="fps" class="form-control form-control-sm" value="30">
+          </div>
         </div>
         <div class="d-flex gap-3 my-3">
           <div>
             <label for="" class="form-label">Color</label>
-            <input type="color" name="color" class="form-control form-control-color" value="#66ff22">
+            <input type="color" name="color" class="form-control form-control-sm form-control-color" value="#00aa11">
           </div>
           <div>
             <label for="" class="form-label">Opacity</label>
-            <input type="number" name="opacity" class="form-control" value="100">
+            <input type="number" name="opacity" class="form-control form-control-sm" value="30">
           </div>
           <div>
-            <label for="" class="form-label">Background Color</label>
-            <input type="color" name="bg" class="form-control form-control-color" value="#333333">
+            <label for="" class="form-label">BG Color</label>
+            <input type="color" name="bg" class="form-control form-control-sm form-control-color" value="#000000">
           </div>
           <div>
-            <label for="" class="form-label">Start Agents</label>
-            <input type="number" name="startAgents" class="form-control" value="10">
-          </div>
-          <div>
-            <label for="" class="form-label">Max Agents</label>
-            <input type="number" name="maxAgents" class="form-control" value="1000">
-          </div>
-          <div>
-            <label for="" class="form-label">Precision</label>
-            <input type="number" name="precision" class="form-control" value="2">
-          </div>
-          <div>
-            <label for="" class="form-label">Color pickup radius (px)</label>
-            <input type="number" name="colorRadius" class="form-control" value="10">
+            <label for="" class="form-label">BG Opacity</label>
+            <input type="number" name="bgOpacity" class="form-control form-control-sm" value="80">
           </div>
           <div>
             <label for="" class="form-label">Vanish rate</label>
-            <input type="number" name="vanishRate" class="form-control" value="1">
+            <input type="number" name="vanishRate" class="form-control form-control-sm" value="0">
+          </div>
+        </div>
+        <div class="d-flex gap-3 my-3">
+          <div>
+            <label for="" class="form-label">Start Agents</label>
+            <input type="number" name="startAgents" class="form-control form-control-sm" value="100">
+          </div>
+          <div>
+            <label for="" class="form-label">Max Agents</label>
+            <input type="number" name="maxAgents" class="form-control form-control-sm" value="1000">
+          </div>
+          <div>
+            <label for="" class="form-label">Move Speed</label>
+            <input type="number" name="moveSpeed" class="form-control form-control-sm" value="0.3" step="any">
+          </div>
+          <div>
+            <label for="" class="form-label">Branchiness</label>
+            <input type="number" name="branchiness" class="form-control form-control-sm" value="0.5" step="any">
+          </div>
+        </div>
+        <div class="d-flex gap-3 my-3">
+          <div>
+            <label for="" class="form-label">Precision</label>
+            <input type="number" name="precision" class="form-control form-control-sm" value="2">
+          </div>
+          <div>
+            <label for="" class="form-label">Intensity eval radius (px)</label>
+            <input type="number" name="intensityRadius" class="form-control form-control-sm" value="15">
+          </div>
+          <div>
+            <label for="" class="form-label">Intensity sight radius (px)</label>
+            <input type="number" name="sightRadius" class="form-control form-control-sm" value="30">
+          </div>
+          <div>
+            <label for="" class="form-label">Sensitivity</label>
+            <input type="number" name="sensitivity" class="form-control form-control-sm" value="2" step="any">
+          </div>
+          <div>
+            <label for="" class="form-label">Brightness</label>
+            <input type="number" name="brightness" class="form-control form-control-sm" value="1" step="any">
           </div>
         </div>
         <div class="d-flex gap-3 my-3">
           <button type="submit" class="btn btn-primary">Generate</button>
-          <button onclick="playPause()" type="button" class="btn btn-info">Pause</button>
-          <button onclick="switchImage()" type="button" class="btn btn-info">Switch Image</button>
+          <button onclick="playPause()" type="button" class="btn btn-secondary">Pause</button>
+          <button onclick="switchImage()" type="button" class="btn btn-secondary">Switch Image</button>
         </div>
       </form>
     </div>

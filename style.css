@@ -1,0 +1,13 @@
+[data-bs-theme="dark"] {
+  --bs-body-color: #c7cdd3;
+  --bs-secondary-color: rgba(173, 181, 189, 0.8);
+  --bs-border-color: var(--bs-dark-border-subtle);
+}
+
+[data-bs-theme="dark"] body {
+  background-color: #121212;
+}
+
+html {
+  height: 100%;
+}

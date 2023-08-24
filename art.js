@@ -4,21 +4,32 @@ class CurveArt {
     this.cy = settings.height / 2;
 
     this.settings = settings;
-    console.log(settings);
+    // console.log(settings);
     this.images = images;
     this.imageIndex = 0;
+    this.intensityMaps = [];
+    for (let i = 0; i < this.images.length; i++) {
+      this.intensityMaps.push(
+        getImageIntensityMap(
+          this.images[i].data.data,
+          this.images[i].data.width,
+          this.images[i].data.height
+        )
+      );
+    }
 
     this.integralImages = [];
     for (let i = 0; i < this.images.length; i++) {
       this.integralImages.push(
-        calculateIntegralImage(
-          images[i].data.data,
-          images[i].data.width,
-          images[i].data.height
+        calculateIntegralImageFromMap(
+          this.intensityMaps[i],
+          this.images[i].data.width,
+          this.images[i].data.height
         )
       );
     }
-    this.maxColorInRadius = (2 * settings.colorRadius) ** 2 * 255;
+
+    this.maxIntensityInRadius = (2 * settings.intensityRadius) ** 2 * (2-settings.brightness);
 
     this.agents = [];
     this.agentCount = 0;
@@ -26,16 +37,35 @@ class CurveArt {
 
     const s = (p) => {
       p.preload = () => {
+        var a = document.createElement("a");
+        a.target = "_blank";
+
         for (let i = 0; i < this.images.length; i++) {
-          this.images[i] = p.loadImage(this.images[i].base64 || this.images[i].src);
+          //   a.href = this.images[i].src;
+          //   var event = new MouseEvent("click");
+          //   a.dispatchEvent(event);
+
+          this.images[i] = p.loadImage(this.images[i].src);
         }
       };
       p.setup = () => {
-        p.createCanvas(settings.width, settings.height);
-        p.frameRate(60);
+        this.settings.colorP5 = p.color(
+          settings.color.r,
+          settings.color.g,
+          settings.color.b,
+          settings.color.a
+        );
+        this.settings.bgP5 = p.color(
+          settings.bg.r,
+          settings.bg.g,
+          settings.bg.b
+        );
 
-        // Draw block
-        p.background(settings.bg.r, settings.bg.g, settings.bg.b, 255);
+        p.createCanvas(settings.width, settings.height);
+        p.frameRate(settings.fps);
+        p.background(this.settings.bgP5);
+        this.settings.bgP5.setAlpha(settings.bg.a);
+
         if (settings.showImage) {
           p.image(this.images[this.imageIndex], 0, 0);
         }
@@ -45,8 +75,6 @@ class CurveArt {
         }
 
         this.addStarterAgents(this.settings.startAgents);
-
-        console.log(this.agents);
       };
 
       p.draw = () => {
@@ -77,6 +105,7 @@ class CurveArt {
   }
 
   playPause() {
+    console.log(this.agentCount);
     if (this.p5.isLooping()) {
       this.p5.noLoop();
     } else {
@@ -96,23 +125,23 @@ class CurveArt {
   }
 
   addAgent(x, y, parent, angle = null) {
-    this.agents.push(new Agent(x, y, parent, this, angle));
+    const newAgent = new Agent(x, y, parent, this, angle);
+    this.agents.push(newAgent);
     this.agentCount++;
-    console.log(this.agentCount);
 
     if (!this.capped && this.agentCount > this.settings.maxAgents) {
       this.capped = true;
     }
   }
 
-  colorInRadius(x, y, draw = false) {
+  intensityInRadius(x, y, draw = false) {
     x = Math.floor(x);
     y = Math.floor(y);
-    let radius = this.settings.colorRadius;
+    let radius = this.settings.intensityRadius;
     let width = this.settings.width;
     let height = this.settings.height;
     let iimg = this.integralImages[this.imageIndex];
-    if (!iimg) {
+    if (!iimg || !iimg.length) {
       return 0.1;
     }
 
@@ -135,11 +164,16 @@ class CurveArt {
     if (topLeftX > 0 && topLeftY > 0)
       sum += iimg[topLeftX - 1 + (topLeftY - 1) * width];
 
-    return inverseLerp(0, this.maxColorInRadius, sum);
+    // console.log(sum);
+
+    return (
+      inverseLerp(0, this.maxIntensityInRadius, sum) **
+      this.settings.sensitivity
+    );
   }
 
   switchImage() {
-    this.imageIndex = (this.imageIndex + 1) % this.images.length
+    this.imageIndex = (this.imageIndex + 1) % this.images.length;
   }
 }
 
@@ -152,7 +186,7 @@ class Agent {
     this.lmin = this.art.settings.lineLengthRange[0];
     this.lmax = this.art.settings.lineLengthRange[1];
 
-    this.angle = angle !== null ? angle : Math.random() * Math.PI * 2;
+    this.angle = angle !== null ? angle : this.getAngleBasedOnColorInRadius();
   }
 
   draw() {
@@ -160,14 +194,17 @@ class Agent {
     const settings = this.art.settings;
     if (!p5 || !this.parent) return;
 
-    const colorValue = this.art.colorInRadius(this.x, this.y);
+    const colorValue = this.art.intensityInRadius(this.x, this.y);
 
-    p5.stroke(
-      settings.color[0],
-      settings.color[1],
-      settings.color[2],
-      lerp(1, settings.color[3], colorValue ** settings.sensitivity)
-    );
+    // p5.stroke(
+    //   settings.color[0],
+    //   settings.color[1],
+    //   settings.color[2],
+    //   lerp(1, settings.color[3], colorValue)
+    // );
+
+    p5.stroke(p5.lerpColor(settings.bgP5, settings.colorP5, colorValue));
+
     p5.strokeWeight(settings.lineWidth);
     p5.line(this.parent.x, this.parent.y, this.x, this.y);
     if (this.stopped) {
@@ -196,11 +233,11 @@ class Agent {
       this.y > screenHeight ||
       this.y < 0
     ) {
-      this.reborn();
+      this.rebirth();
       return;
     }
 
-    const colorValue = this.art.colorInRadius(this.x, this.y);
+    const colorValue = this.art.intensityInRadius(this.x, this.y);
 
     let distance = this.art.p5.dist(
       this.parent.x,
@@ -221,9 +258,12 @@ class Agent {
     }
   }
 
-  reborn() {
+  rebirth() {
     this.stopped = true;
-    this.art.addAgent(this.art.cx, this.art.cy, this.parent);
+    this.art.addAgent(this.art.cx, this.art.cy, {
+      x: this.art.cx,
+      y: this.art.cy,
+    });
   }
 
   branch(colorValue) {
@@ -231,10 +271,7 @@ class Agent {
       ? 1
       : Math.max(
           Math.floor(
-            this.art.settings.branchiness *
-              colorValue ** this.art.settings.sensitivity *
-              Math.random() *
-              5
+            this.art.settings.branchiness * colorValue * Math.random() * 5
           ),
           1
         );
@@ -243,6 +280,31 @@ class Agent {
       this.art.addAgent(this.x, this.y, this);
     }
   }
+
+  getAngleBasedOnColorInRadius() {
+    const currentImageIntMap = this.art.intensityMaps[this.art.imageIndex];
+    const sightRadius = this.art.settings.sightRadius;
+    const width = this.art.settings.width;
+    const height = this.art.settings.height;
+
+    const { map: radiusIntMap, total: totalIntensity } =
+      getIntensityMapInRadius(
+        currentImageIntMap,
+        this.x,
+        this.y,
+        sightRadius,
+        width,
+        height
+      );
+
+    const weightedMapIndex = getWeightedIndex(radiusIntMap, totalIntensity);
+    const chosenY = Math.floor(weightedMapIndex / (2 * sightRadius + 1));
+    const chosenX = weightedMapIndex % (2 * sightRadius + 1);
+
+    // console.log(currentImageIntMap, radiusIntMap, weightedMapIndex, chosenX, chosenY)
+
+    return Math.atan2(chosenY - sightRadius, chosenX - sightRadius);
+  }
 }
 
 class ArtSettings {
@@ -250,21 +312,27 @@ class ArtSettings {
     this.width = options.width || 1000;
     this.height = options.height || 800;
     this.showImage = options.showImage || false;
-    const bg = hexToRgb(options.bg);
-    this.bg = bg || { r: 30, g: 30, b: 30 };
+    this.fps = options.fps || 60;
+
     const color = hexToRgb(options.color);
-    this.color = [color.r, color.g, color.b, options.opacity || 100];
-    this.lineWidth = options.lineWidth || 1;
-    this.pointWidth = options.pointWidth || 6;
-    this.colorRadius = options.colorRadius || 20;
+    this.color = { ...color, a: options.opacity };
+    const bg = hexToRgb(options.bg);
+    this.bg = { ...bg, a: options.bgOpacity };
+    this.vanishRate = options.vanishRate !== null ? options.vanishRate : 0;
+
     this.startAgents = options.startAgents || 4;
     this.maxAgents = options.maxAgents || 1000;
-    this.lineWidth = options.lineWidth || 1;
-    this.branchiness = options.branchiness || 0.8;
-    this.precision = options.precision || 2;
-    this.sensitivity = options.sensitivity || 2;
-    this.lineLengthRange = options.lineLengthRange || [30, 300];
     this.moveSpeed = options.moveSpeed || 0.5;
-    this.vanishRate = options.vanishRate !== null ? options.vanishRate : 0;
+    this.branchiness = options.branchiness || 0.5;
+
+    this.precision = options.precision || 2;
+    this.intensityRadius = options.intensityRadius || 20;
+    this.sightRadius = options.sightRadius || 50;
+    this.sensitivity = options.sensitivity || 2;
+    this.brightness = options.brightness || 1;
+
+    this.lineWidth = options.lineWidth || 1;
+    this.pointWidth = options.pointWidth || 6;
+    this.lineLengthRange = options.lineLengthRange || [30, 300];
   }
 }

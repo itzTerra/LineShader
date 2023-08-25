@@ -1,10 +1,9 @@
 class CurveArt {
   constructor(elementId, settings, images, autoplay = false) {
-    this.cx = settings.width / 2;
-    this.cy = settings.height / 2;
-
     this.settings = settings;
     // console.log(settings);
+    this.cx = settings.width / 2;
+    this.cy = settings.height / 2;
     this.images = images;
     this.imageIndex = 0;
     this.intensityMaps = [];
@@ -17,7 +16,7 @@ class CurveArt {
         )
       );
     }
-
+    this.maxIntensityInRadius = (2 * settings.intensityRadius) ** 2 * settings.brightness;
     this.integralImages = [];
     for (let i = 0; i < this.images.length; i++) {
       this.integralImages.push(
@@ -28,9 +27,6 @@ class CurveArt {
         )
       );
     }
-
-    this.maxIntensityInRadius = (2 * settings.intensityRadius) ** 2 * (2-settings.brightness);
-
     this.agents = [];
     this.agentCount = 0;
     this.capped = false;
@@ -75,6 +71,10 @@ class CurveArt {
         }
 
         this.addStarterAgents(this.settings.startAgents);
+
+        if (settings.imageDelay){
+            this.changeImageOnInterval()
+        }
       };
 
       p.draw = () => {
@@ -108,8 +108,15 @@ class CurveArt {
     console.log(this.agentCount);
     if (this.p5.isLooping()) {
       this.p5.noLoop();
+      if (this.imageInterval){
+        clearInterval(this.imageInterval)
+        this.imageInterval = null
+      }
     } else {
       this.p5.loop();
+      if (settings.imageDelay){
+        this.changeImageOnInterval()
+    }
     }
   }
 
@@ -168,12 +175,18 @@ class CurveArt {
 
     return (
       inverseLerp(0, this.maxIntensityInRadius, sum) **
-      this.settings.sensitivity
+      this.settings.contrast
     );
   }
 
   switchImage() {
     this.imageIndex = (this.imageIndex + 1) % this.images.length;
+  }
+
+  changeImageOnInterval(){
+    this.imageInterval = setInterval(() => {
+        this.switchImage()
+    }, this.settings.imageDelay * 1000)
   }
 }
 
@@ -313,6 +326,7 @@ class ArtSettings {
     this.height = options.height || 800;
     this.showImage = options.showImage || false;
     this.fps = options.fps || 60;
+    this.imageDelay = options.imageDelay || 0;
 
     const color = hexToRgb(options.color);
     this.color = { ...color, a: options.opacity };
@@ -328,11 +342,11 @@ class ArtSettings {
     this.precision = options.precision || 2;
     this.intensityRadius = options.intensityRadius || 20;
     this.sightRadius = options.sightRadius || 50;
-    this.sensitivity = options.sensitivity || 2;
+    this.contrast = options.contrast || 1;
     this.brightness = options.brightness || 1;
 
     this.lineWidth = options.lineWidth || 1;
     this.pointWidth = options.pointWidth || 6;
-    this.lineLengthRange = options.lineLengthRange || [30, 300];
+    this.lineLengthRange = [options.lineLenMin || 30, options.lineLenMax || 300];
   }
 }

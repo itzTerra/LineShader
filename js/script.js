@@ -72,6 +72,7 @@ function getSettings(formData) {
     height: Number(formData.get("height")),
     showImage: Boolean(formData.get("showImage")),
     fps: Number(formData.get("fps")),
+    imageDelay: Number(formData.get("imageDelay")),
     
     color: formData.get("color"),
     opacity: Number(formData.get("opacity")),
@@ -83,11 +84,13 @@ function getSettings(formData) {
     maxAgents: Number(formData.get("maxAgents")),
     moveSpeed: Number(formData.get("moveSpeed")),
     branchiness: Number(formData.get("branchiness")),
+    lineLenMin: Number(formData.get("lineLenMin")),
+    lineLenMax: Number(formData.get("lineLenMax")),
 
     precision: Number(formData.get("precision")),
     intensityRadius: Number(formData.get("intensityRadius")),
     sightRadius: Number(formData.get("sightRadius")),
-    sensitivity: Number(formData.get("sensitivity")),
+    contrast: Number(formData.get("contrast")),
     brightness: Number(formData.get("brightness")),
   });
 }
@@ -105,7 +108,16 @@ async function generateArt() {
     ) {
       images = [getImg(formData.get("source"), settings)];
     } else {
-      images = await getImages(["img/0.png", "img/1.png"], settings);
+      images = await getImages([
+        "weather/1.png", 
+        "weather/2.png",
+        "weather/3.png",
+        "weather/4.png",
+        "weather/5.png",
+        "weather/6.png",
+        "weather/7.png",
+        "weather/8.png",
+    ], settings);
     }
 
     if (art) {

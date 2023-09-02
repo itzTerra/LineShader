@@ -1,4 +1,64 @@
-class CurveArt {
+class LineArt {
+  static SPAWN_AREAS = [
+    {
+      chance: 0.5,
+      radius: 0.15,
+    },
+    {
+      chance: 0.3,
+      radius: 0.3,
+    },
+    {
+      chance: 0.2,
+      radius: 0.6,
+    },
+  ];
+
+  static getImagesFromSources(srcList, width, height) {
+    return new Promise((resolve, reject) => {
+      const loadedImages = [];
+      let imagesToLoad = srcList.length;
+
+      let i = 0;
+      srcList.forEach((src) => {
+        const index = i++;
+        const img = new Image();
+        img.src = src;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const context = canvas.getContext("2d");
+
+          const imgData = {
+            id: index,
+            data: context.getImageData(0, 0, width, height),
+            src: src,
+          };
+
+          loadedImages.push(imgData);
+          imagesToLoad--;
+          if (imagesToLoad === 0) {
+            loadedImages.sort((a, b) => {
+              a.id - b.id;
+            });
+            resolve(loadedImages);
+          }
+        };
+        img.onerror = () => {
+          imagesToLoad--;
+          console.error(`Failed to load image from ${src}`);
+          if (imagesToLoad === 0) {
+            loadedImages.sort((a, b) => {
+              a.id - b.id;
+            });
+            resolve(loadedImages);
+          }
+        };
+      });
+    });
+  }
+
   constructor(elementId, settings, images, autoplay = false) {
     this.settings = settings;
     // console.log(settings);
@@ -9,21 +69,24 @@ class CurveArt {
     this.intensityMaps = [];
     for (let i = 0; i < this.images.length; i++) {
       this.intensityMaps.push(
-        getImageIntensityMap(
+        ArtUtils.getImageIntensityMap(
           this.images[i].data.data,
           this.images[i].data.width,
-          this.images[i].data.height
+          this.images[i].data.height,
+          settings.intensityMode
         )
       );
     }
-    this.maxIntensityInRadius = (2 * settings.intensityRadius) ** 2 * settings.brightness;
+    this.maxIntensityInRadius =
+      (2 * settings.intensityRadius) ** 2 * settings.brightness;
     this.integralImages = [];
     for (let i = 0; i < this.images.length; i++) {
       this.integralImages.push(
-        calculateIntegralImageFromMap(
+        ArtUtils.calculateIntegralImageFromMap(
           this.intensityMaps[i],
           this.images[i].data.width,
-          this.images[i].data.height
+          this.images[i].data.height,
+          settings.intensityMode
         )
       );
     }
@@ -70,10 +133,10 @@ class CurveArt {
           p.noLoop();
         }
 
-        this.addStarterAgents(this.settings.startAgents);
+        this.spawnStarterAgentsRandom(this.settings.startAgents);
 
-        if (settings.imageDelay){
-            this.changeImageOnInterval()
+        if (settings.imageDelay) {
+          this.changeImageOnInterval();
         }
       };
 
@@ -108,30 +171,28 @@ class CurveArt {
     console.log(this.agentCount);
     if (this.p5.isLooping()) {
       this.p5.noLoop();
-      if (this.imageInterval){
-        clearInterval(this.imageInterval)
-        this.imageInterval = null
+      if (this.imageInterval) {
+        clearInterval(this.imageInterval);
+        this.imageInterval = null;
       }
     } else {
       this.p5.loop();
-      if (settings.imageDelay){
-        this.changeImageOnInterval()
-    }
+      if (this.settings.imageDelay) {
+        this.changeImageOnInterval();
+      }
     }
   }
 
-  addStarterAgents(amount) {
-    let anglePart = (Math.PI * 2) / amount;
-    const parent = {
-      x: this.cx,
-      y: this.cy,
-    };
+  spawnStarterAgentsRandom(amount) {
     for (let i = 0; i < amount; i++) {
-      this.addAgent(this.cx, this.cy, parent, anglePart * i);
+      this.spawnAgentRandom();
     }
   }
 
-  addAgent(x, y, parent, angle = null) {
+  spawnAgent(x, y, parent = null, angle = null) {
+    if (parent === null) {
+      parent = { x: x, y: y };
+    }
     const newAgent = new Agent(x, y, parent, this, angle);
     this.agents.push(newAgent);
     this.agentCount++;
@@ -139,6 +200,32 @@ class CurveArt {
     if (!this.capped && this.agentCount > this.settings.maxAgents) {
       this.capped = true;
     }
+  }
+
+  spawnAgentRandom() {
+    let random = Math.random();
+    let pickedRadius = null;
+    for (const spawnArea of LineArt.SPAWN_AREAS) {
+      if (spawnArea.chance > random) {
+        pickedRadius = spawnArea.radius;
+        break;
+      }
+      random -= spawnArea.chance;
+    }
+    if (pickedRadius === null) {
+      pickedRadius = LineArt.SPAWN_AREAS[0].radius;
+    }
+
+    const spawnWidth = this.settings.width * pickedRadius;
+    const spawnHeight = this.settings.height * pickedRadius;
+
+    const x = Math.floor(
+      (this.settings.width - spawnWidth) / 2 + Math.random() * spawnWidth
+    );
+    const y = Math.floor(
+      (this.settings.height - spawnHeight) / 2 + Math.random() * spawnHeight
+    );
+    this.spawnAgent(x, y);
   }
 
   intensityInRadius(x, y, draw = false) {
@@ -174,7 +261,7 @@ class CurveArt {
     // console.log(sum);
 
     return (
-      inverseLerp(0, this.maxIntensityInRadius, sum) **
+      ArtUtils.inverseLerp(0, this.maxIntensityInRadius, sum) **
       this.settings.contrast
     );
   }
@@ -183,10 +270,10 @@ class CurveArt {
     this.imageIndex = (this.imageIndex + 1) % this.images.length;
   }
 
-  changeImageOnInterval(){
+  changeImageOnInterval() {
     this.imageInterval = setInterval(() => {
-        this.switchImage()
-    }, this.settings.imageDelay * 1000)
+      this.switchImage();
+    }, this.settings.imageDelay * 1000);
   }
 }
 
@@ -213,7 +300,7 @@ class Agent {
     //   settings.color[0],
     //   settings.color[1],
     //   settings.color[2],
-    //   lerp(1, settings.color[3], colorValue)
+    //   ArtUtils.lerp(1, settings.color[3], colorValue)
     // );
 
     p5.stroke(p5.lerpColor(settings.bgP5, settings.colorP5, colorValue));
@@ -229,28 +316,33 @@ class Agent {
   update() {
     if (!this.art.p5) return;
 
-    this.x +=
-      Math.cos(this.angle) *
-      this.art.settings.moveSpeed *
-      this.art.p5.deltaTime;
-    this.y +=
-      Math.sin(this.angle) *
-      this.art.settings.moveSpeed *
+    const settings = this.art.settings;
+    const colorValue = this.art.intensityInRadius(this.x, this.y);
+
+    const coef =
+      settings.moveSpeed *
+      ArtUtils.lerp(
+        0.25,
+        2,
+        Math.pow(1 - colorValue, 1 + settings.moveSpeedContrast)
+      ) *
       this.art.p5.deltaTime;
 
-    let screenWidth = this.art.settings.width;
-    let screenHeight = this.art.settings.height;
+    this.x += Math.cos(this.angle) * coef;
+    this.y += Math.sin(this.angle) * coef;
+
+    let screenWidth = settings.width;
+    let screenHeight = settings.height;
     if (
       this.x > screenWidth ||
       this.x < 0 ||
       this.y > screenHeight ||
       this.y < 0
     ) {
-      this.rebirth();
+      this.stopped = true;
+      this.art.spawnAgentRandom();
       return;
     }
-
-    const colorValue = this.art.intensityInRadius(this.x, this.y);
 
     let distance = this.art.p5.dist(
       this.parent.x,
@@ -260,23 +352,15 @@ class Agent {
     );
     if (
       distance >
-      lerp(
+      ArtUtils.lerp(
         this.lmin,
         this.lmax,
-        Math.pow(1 - colorValue, 1 + this.art.settings.precision)
+        Math.pow(1 - colorValue, 1 + settings.lineLenContrast)
       )
     ) {
       this.stopped = true;
       this.branch(colorValue);
     }
-  }
-
-  rebirth() {
-    this.stopped = true;
-    this.art.addAgent(this.art.cx, this.art.cy, {
-      x: this.art.cx,
-      y: this.art.cy,
-    });
   }
 
   branch(colorValue) {
@@ -290,7 +374,7 @@ class Agent {
         );
 
     for (let i = 0; i < newBranchCount; i++) {
-      this.art.addAgent(this.x, this.y, this);
+      this.art.spawnAgent(this.x, this.y, this);
     }
   }
 
@@ -301,7 +385,7 @@ class Agent {
     const height = this.art.settings.height;
 
     const { map: radiusIntMap, total: totalIntensity } =
-      getIntensityMapInRadius(
+      ArtUtils.getIntensityMapInRadius(
         currentImageIntMap,
         this.x,
         this.y,
@@ -310,7 +394,10 @@ class Agent {
         height
       );
 
-    const weightedMapIndex = getWeightedIndex(radiusIntMap, totalIntensity);
+    const weightedMapIndex = ArtUtils.getWeightedIndex(
+      radiusIntMap,
+      totalIntensity
+    );
     const chosenY = Math.floor(weightedMapIndex / (2 * sightRadius + 1));
     const chosenX = weightedMapIndex % (2 * sightRadius + 1);
 
@@ -322,31 +409,181 @@ class Agent {
 
 class ArtSettings {
   constructor(options = {}) {
+    this.intensityMode = options.intensityMode || "light";
     this.width = options.width || 1000;
-    this.height = options.height || 800;
+    this.height = options.height || 1000;
     this.showImage = options.showImage || false;
     this.fps = options.fps || 60;
     this.imageDelay = options.imageDelay || 0;
 
-    const color = hexToRgb(options.color);
-    this.color = { ...color, a: options.opacity };
-    const bg = hexToRgb(options.bg);
-    this.bg = { ...bg, a: options.bgOpacity };
+    const color = ArtUtils.hexToRgb(options.color || "#ff0000");
+    this.color = { ...color, a: options.opacity || 30 };
+    const bg = ArtUtils.hexToRgb(options.bg || "#000000");
+    this.bg = { ...bg, a: options.bgOpacity || 100 };
     this.vanishRate = options.vanishRate !== null ? options.vanishRate : 0;
 
-    this.startAgents = options.startAgents || 4;
-    this.maxAgents = options.maxAgents || 1000;
-    this.moveSpeed = options.moveSpeed || 0.5;
+    this.startAgents = options.startAgents || 500;
+    this.maxAgents = options.maxAgents || 1500;
     this.branchiness = options.branchiness || 0.5;
+    this.moveSpeed = options.moveSpeed || 0.5;
+    this.moveSpeedContrast = options.moveSpeedContrast || 0;
 
-    this.precision = options.precision || 2;
-    this.intensityRadius = options.intensityRadius || 20;
-    this.sightRadius = options.sightRadius || 50;
+    this.lineLengthRange = [
+      options.lineLenMin || 30,
+      options.lineLenMax || 300,
+    ];
+    this.lineLenContrast = options.lineLenContrast || 2;
+    this.intensityRadius = options.intensityRadius || 10;
+    this.sightRadius = options.sightRadius || 30;
     this.contrast = options.contrast || 1;
     this.brightness = options.brightness || 1;
 
     this.lineWidth = options.lineWidth || 1;
     this.pointWidth = options.pointWidth || 6;
-    this.lineLengthRange = [options.lineLenMin || 30, options.lineLenMax || 300];
+  }
+}
+
+class ArtUtils {
+  static clamp(a, min = 0, max = 1) {
+    return Math.min(max, Math.max(min, a));
+  }
+
+  static lerp(a, b, t) {
+    return a * (1 - t) + b * t;
+  }
+
+  static inverseLerp(a, b, v) {
+    return this.clamp((v - a) / (b - a));
+  }
+
+  static combineLerp(min1, max1, min2, max2, val) {
+    let t = this.inverseLerp(min1, max1, val);
+    return this.lerp(min2, max2, t);
+  }
+
+  static randomRange(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  static randint(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  static getImageIntensityMap(pixels, width, height, mode = "light") {
+    const intensityMap = new Float32Array(width * height);
+
+    if (mode === "light") {
+      for (let i = 0; i < intensityMap.length; i++) {
+        intensityMap[i] = pixels[i * 4] / 255.0;
+      }
+    } else {
+      for (let i = 0; i < intensityMap.length; i++) {
+        intensityMap[i] = 1 - pixels[i * 4] / 255.0;
+      }
+    }
+
+    return intensityMap;
+  }
+
+  static getIntensityMapInRadius(
+    imageIntensityMap,
+    x,
+    y,
+    radius,
+    width,
+    height
+  ) {
+    const cx = Math.floor(x);
+    const cy = Math.floor(y);
+    const intensityMap = [];
+    let total = 0;
+
+    for (let y = cy - radius; y <= cy + radius; y++) {
+      for (let x = cx - radius; x <= cx + radius; x++) {
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+          const index = y * width + x;
+          intensityMap.push(imageIntensityMap[index]);
+          total += imageIntensityMap[index];
+        } else {
+          intensityMap.push(0);
+        }
+      }
+    }
+
+    return { map: intensityMap, total: total };
+  }
+
+  static getWeightedIndex(weights, total = null) {
+    if (total === null) {
+      total = weights.reduce((sum, weight) => sum + weight, 0);
+    }
+    let randomBreakpoint = Math.random() * total;
+
+    for (let i = 0; i < weights.length; i++) {
+      if (randomBreakpoint < weights[i]) {
+        return i;
+      }
+      randomBreakpoint -= weights[i];
+    }
+
+    return Math.floor(Math.random() * weights.length);
+  }
+
+  static calculateIntegralImage(pixels, width, height) {
+    let integral = [];
+    for (let i = 0; i < width * height; i++) {
+      integral.push(0);
+    }
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let index = x + y * width;
+
+        let sum = pixels[index * 4];
+        if (x > 0) sum += integral[index - 1];
+        if (y > 0) sum += integral[index - width];
+        if (x > 0 && y > 0) sum -= integral[index - 1 - width];
+
+        integral[index] = sum;
+      }
+    }
+
+    return integral;
+  }
+
+  static calculateIntegralImageFromMap(intensityMap, width, height) {
+    const l = intensityMap.length;
+    let integral = new Float32Array(l);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        let index = x + y * width;
+
+        let sum = intensityMap[index];
+        if (x > 0) sum += integral[index - 1];
+        if (y > 0) sum += integral[index - width];
+        if (x > 0 && y > 0) sum -= integral[index - 1 - width];
+
+        integral[index] = sum;
+      }
+    }
+
+    return integral;
+  }
+
+  static hexToRgb(hex) {
+    if (!hex) return;
+    // Remove the hash character if it's included
+    hex = hex.replace("#", "");
+
+    // Convert the hexadecimal values to integers
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Return the RGB values as an object
+    return { r, g, b };
   }
 }

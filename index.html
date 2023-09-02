@@ -44,6 +44,13 @@
             </select>
           </div>
           <div>
+            <label for="" class="form-label">Intensity Mode</label>
+            <select name="intensityMode" class="form-select form-select-sm">
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+          <div>
             <label for="" class="form-label">Width</label>
             <input type="number" name="width" class="form-control form-control-sm" value="1000">
           </div>
@@ -61,7 +68,7 @@
           </div>
           <div>
             <label for="" class="form-label">Image Change Delay (sec)</label>
-            <input type="number" name="imageDelay" class="form-control form-control-sm" value="8">
+            <input type="number" name="imageDelay" class="form-control form-control-sm" value="10">
           </div>
         </div>
         <div class="d-flex gap-3 my-3">
@@ -101,8 +108,14 @@
           </div>
           <div>
             <label for="" class="form-label">Move Speed</label>
-            <input type="number" name="moveSpeed" class="form-control form-control-sm" value="0.3" step="any">
+            <input type="number" name="moveSpeed" class="form-control form-control-sm" value="1" step="any">
           </div>
+          <div>
+            <label for="" class="form-label">Move Speed Contrast</label>
+            <input type="number" name="moveSpeedContrast" class="form-control form-control-sm" value="0" step="any">
+          </div>
+        </div>
+        <div class="d-flex gap-3 my-3">
           <div>
             <label for="" class="form-label">Line Length (min-max)</label>
             <div class="input-group input-group-sm">
@@ -111,11 +124,9 @@
               <input type="number" name="lineLenMax" class="form-control form-control-sm" value="300">
             </div>
           </div>
-        </div>
-        <div class="d-flex gap-3 my-3">
           <div>
             <label for="" class="form-label">Line Length Contrast</label>
-            <input type="number" name="precision" class="form-control form-control-sm" value="3">
+            <input type="number" name="lineLenContrast" class="form-control form-control-sm" value="3" step="any">
           </div>
           <div>
             <label for="" class="form-label">Intensity eval radius (px)</label>
@@ -152,7 +163,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"
     integrity="sha512-bcfltY+lNLlNxz38yBBm/HLaUB1gTV6I0e+fahbF9pS6roIdzUytozWdnFV8ZnM6cSAG5EbmO0ag0a/fLZSG4Q=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="js/utils.js"></script>
   <script src="js/image.js"></script>
   <script src="js/art.js"></script>
   <script src="js/script.js"></script>

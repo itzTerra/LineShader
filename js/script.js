@@ -1,3 +1,26 @@
+const WEATHER_SOURCES = [
+  "examples/weather/1.png",
+  "examples/weather/2.png",
+  "examples/weather/3.png",
+  "examples/weather/4.png",
+  "examples/weather/5.png",
+  "examples/weather/6.png",
+  "examples/weather/7.png",
+  "examples/weather/8.png",
+];
+
+const DRAGON_SOURCES = [
+  "examples/dragon/1.jpg",
+  "examples/dragon/2.jpg",
+  "examples/dragon/3.jpg",
+  "examples/dragon/4.jpg",
+  "examples/dragon/5.jpg",
+  "examples/dragon/6.jpg",
+  "examples/dragon/7.jpg",
+  "examples/dragon/8.jpg",
+  "examples/dragon/9.jpg",
+];
+
 const generateForm = document.getElementById("generateForm");
 generateForm.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -45,13 +68,20 @@ function getImages(srcList, settings) {
     const loadedImages = [];
     let imagesToLoad = srcList.length;
 
+    let i = 0;
     srcList.forEach((src) => {
+      const index = i++;
       const img = new Image();
       img.src = src;
       img.onload = () => {
-        loadedImages.push(getImg(img, settings));
+        const imgData = getImg(img, settings);
+        imgData.id = index;
+        loadedImages.push(imgData);
         imagesToLoad--;
         if (imagesToLoad === 0) {
+          loadedImages.sort((a, b) => {
+            a.id - b.id;
+          });
           resolve(loadedImages);
         }
       };
@@ -59,6 +89,9 @@ function getImages(srcList, settings) {
         imagesToLoad--;
         console.error(`Failed to load image from ${src}`);
         if (imagesToLoad === 0) {
+          loadedImages.sort((a, b) => {
+            a.id - b.id;
+          });
           resolve(loadedImages);
         }
       };
@@ -68,12 +101,13 @@ function getImages(srcList, settings) {
 
 function getSettings(formData) {
   return new ArtSettings({
+    intensityMode: formData.get("intensityMode"),
     width: Number(formData.get("width")),
     height: Number(formData.get("height")),
     showImage: Boolean(formData.get("showImage")),
     fps: Number(formData.get("fps")),
     imageDelay: Number(formData.get("imageDelay")),
-    
+
     color: formData.get("color"),
     opacity: Number(formData.get("opacity")),
     bg: formData.get("bg"),
@@ -87,7 +121,7 @@ function getSettings(formData) {
     lineLenMin: Number(formData.get("lineLenMin")),
     lineLenMax: Number(formData.get("lineLenMax")),
 
-    precision: Number(formData.get("precision")),
+    lineLenContrast: Number(formData.get("lineLenContrast")),
     intensityRadius: Number(formData.get("intensityRadius")),
     sightRadius: Number(formData.get("sightRadius")),
     contrast: Number(formData.get("contrast")),
@@ -108,16 +142,7 @@ async function generateArt() {
     ) {
       images = [getImg(formData.get("source"), settings)];
     } else {
-      images = await getImages([
-        "weather/1.png", 
-        "weather/2.png",
-        "weather/3.png",
-        "weather/4.png",
-        "weather/5.png",
-        "weather/6.png",
-        "weather/7.png",
-        "weather/8.png",
-    ], settings);
+      images = await getImages(DRAGON_SOURCES, settings);
     }
 
     if (art) {
@@ -126,7 +151,7 @@ async function generateArt() {
       art = null;
     }
 
-    art = new CurveArt("art", settings, images, true);
+    art = new LineArt("art", settings, images, true);
     console.log(art);
   } catch (err) {
     console.error(err);

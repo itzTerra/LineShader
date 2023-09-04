@@ -64,15 +64,15 @@ class LineArt {
     // console.log(settings);
     this.cx = settings.width / 2;
     this.cy = settings.height / 2;
-    this.images = images;
+    this.images = [];
     this.imageIndex = 0;
     this.intensityMaps = [];
-    for (let i = 0; i < this.images.length; i++) {
+    for (let i = 0; i < images.length; i++) {
       this.intensityMaps.push(
         ArtUtils.getImageIntensityMap(
-          this.images[i].data.data,
-          this.images[i].data.width,
-          this.images[i].data.height,
+          images[i].data.data,
+          images[i].data.width,
+          images[i].data.height,
           settings.intensityMode
         )
       );
@@ -80,12 +80,12 @@ class LineArt {
     this.maxIntensityInRadius =
       (2 * settings.intensityRadius) ** 2 * settings.brightness;
     this.integralImages = [];
-    for (let i = 0; i < this.images.length; i++) {
+    for (let i = 0; i < images.length; i++) {
       this.integralImages.push(
         ArtUtils.calculateIntegralImageFromMap(
           this.intensityMaps[i],
-          this.images[i].data.width,
-          this.images[i].data.height,
+          images[i].data.width,
+          images[i].data.height,
           settings.intensityMode
         )
       );
@@ -99,12 +99,12 @@ class LineArt {
         var a = document.createElement("a");
         a.target = "_blank";
 
-        for (let i = 0; i < this.images.length; i++) {
+        for (let i = 0; i < images.length; i++) {
           //   a.href = this.images[i].src;
           //   var event = new MouseEvent("click");
           //   a.dispatchEvent(event);
 
-          this.images[i] = p.loadImage(this.images[i].src);
+          this.images[i] = p.loadImage(images[i].src);
         }
       };
       p.setup = () => {
@@ -410,8 +410,8 @@ class Agent {
 class ArtSettings {
   constructor(options = {}) {
     this.intensityMode = options.intensityMode || "light";
-    this.width = options.width || 1000;
-    this.height = options.height || 1000;
+    this._width = options.width || 1000;
+    this._height = options.height || 1000;
     this.showImage = options.showImage || false;
     this.fps = options.fps || 60;
     this.imageDelay = options.imageDelay || 0;
@@ -440,6 +440,14 @@ class ArtSettings {
 
     this.lineWidth = options.lineWidth || 1;
     this.pointWidth = options.pointWidth || 6;
+  }
+
+  get width() {
+    return this._width === "full" ? window.innerWidth : this._width;
+  }
+
+  get height() {
+    return this._height === "full" ? window.innerHeight : this._height;
   }
 }
 

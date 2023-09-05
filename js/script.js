@@ -21,6 +21,10 @@ const DRAGON_SOURCES = [
   "examples/dragon/9.jpg",
 ];
 
+// IN DEV
+// originalImg = document.createElement("img");
+// originalImg.src = "img/0.png";
+
 const generateForm = document.getElementById("generateForm");
 generateForm.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -30,74 +34,7 @@ generateForm.addEventListener("submit", (e) => {
 
 const artDiv = document.getElementById("art");
 
-// IN DEV
-// originalImg = document.createElement("img");
-// originalImg.src = "img/0.png";
-
 var art;
-
-function getImg(source, settings) {
-  const image = {};
-
-  const sizeX = settings.width;
-  const sizeY = settings.height;
-  resultCanvas.width = sizeX;
-  resultCanvas.height = sizeY;
-  const context = resultCanvas.getContext("2d");
-
-  if (source == "upload") {
-    context.drawImage(originalImg, 0, 0, sizeX, sizeY);
-    image.data = context.getImageData(0, 0, sizeX, sizeY);
-    image.src = originalImg.src;
-  } else if (source == "process") {
-    context.drawImage(processedImg.image, 0, 0, sizeX, sizeY);
-    image.data = context.getImageData(0, 0, sizeX, sizeY);
-    image.src = processedImg.toBase64();
-  } else {
-    context.drawImage(source, 0, 0, sizeX, sizeY);
-    image.data = context.getImageData(0, 0, sizeX, sizeY);
-    image.src = source.src;
-  }
-
-  // console.log(image, sizeX, sizeY);
-  return image;
-}
-
-function getImages(srcList, settings) {
-  return new Promise((resolve, reject) => {
-    const loadedImages = [];
-    let imagesToLoad = srcList.length;
-
-    let i = 0;
-    srcList.forEach((src) => {
-      const index = i++;
-      const img = new Image();
-      img.src = src;
-      img.onload = () => {
-        const imgData = getImg(img, settings);
-        imgData.id = index;
-        loadedImages.push(imgData);
-        imagesToLoad--;
-        if (imagesToLoad === 0) {
-          loadedImages.sort((a, b) => {
-            a.id - b.id;
-          });
-          resolve(loadedImages);
-        }
-      };
-      img.onerror = () => {
-        imagesToLoad--;
-        console.error(`Failed to load image from ${src}`);
-        if (imagesToLoad === 0) {
-          loadedImages.sort((a, b) => {
-            a.id - b.id;
-          });
-          resolve(loadedImages);
-        }
-      };
-    });
-  });
-}
 
 function getSettings(formData) {
   return new ArtSettings({
@@ -132,17 +69,15 @@ function getSettings(formData) {
 async function generateArt() {
   try {
     const formData = new FormData(generateForm);
-
+    const settings = getSettings(formData);
     let images = [];
 
-    const settings = getSettings(formData);
-    if (
-      (formData.get("source") == "upload" && originalImg) ||
-      (formData.get("source") == "process" && processedImg)
-    ) {
-      images = [getImg(formData.get("source"), settings)];
+    if (formData.get("source") == "upload" && originalImg) {
+      images.push(originalImg);
+    } else if (formData.get("source") == "process" && processedImg) {
+      images.push(processedImg.image);
     } else {
-      images = await getImages(DRAGON_SOURCES, settings);
+      images = await LineArt.getImagesFromSources(DRAGON_SOURCES);
     }
 
     if (art) {

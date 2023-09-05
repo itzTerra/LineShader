@@ -53,11 +53,12 @@ function getSettings(formData) {
 
     startAgents: Number(formData.get("startAgents")),
     maxAgents: Number(formData.get("maxAgents")),
-    moveSpeed: Number(formData.get("moveSpeed")),
     branchiness: Number(formData.get("branchiness")),
+    moveSpeed: Number(formData.get("moveSpeed")),
+    moveSpeedContrast: Number(formData.get("moveSpeedContrast")),
+    
     lineLenMin: Number(formData.get("lineLenMin")),
     lineLenMax: Number(formData.get("lineLenMax")),
-
     lineLenContrast: Number(formData.get("lineLenContrast")),
     intensityRadius: Number(formData.get("intensityRadius")),
     sightRadius: Number(formData.get("sightRadius")),

@@ -14,82 +14,49 @@ class LineArt {
     },
   ];
 
-  static getImagesFromSources(srcList, width, height) {
+  static getImagesFromSources(srcList) {
     return new Promise((resolve, reject) => {
       const loadedImages = [];
       let imagesToLoad = srcList.length;
 
-      let i = 0;
-      srcList.forEach((src) => {
-        const index = i++;
+      for (let i = 0; i < srcList.length; i++) {
         const img = new Image();
-        img.src = src;
+        img.src = srcList[i];
         img.onload = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          const context = canvas.getContext("2d");
-
-          const imgData = {
-            id: index,
-            data: context.getImageData(0, 0, width, height),
-            src: src,
-          };
-
-          loadedImages.push(imgData);
+          loadedImages.push({
+            index: i,
+            img: img,
+          });
           imagesToLoad--;
           if (imagesToLoad === 0) {
             loadedImages.sort((a, b) => {
-              a.id - b.id;
+              return a.index - b.index;
             });
-            resolve(loadedImages);
+            resolve(loadedImages.map((item) => item.img));
           }
         };
         img.onerror = () => {
           imagesToLoad--;
-          console.error(`Failed to load image from ${src}`);
+          console.error(`Failed to load image from ${srcList[i]}`);
           if (imagesToLoad === 0) {
             loadedImages.sort((a, b) => {
-              a.id - b.id;
+              return a.index - b.index;
             });
-            resolve(loadedImages);
+            resolve(loadedImages.map((item) => item.img));
           }
         };
-      });
+      }
     });
   }
 
   constructor(elementId, settings, images, autoplay = false) {
     this.settings = settings;
     // console.log(settings);
-    this.cx = settings.width / 2;
-    this.cy = settings.height / 2;
-    this.images = [];
+
+    this.rawImages = images;
+    this.calculateImages();
     this.imageIndex = 0;
-    this.intensityMaps = [];
-    for (let i = 0; i < images.length; i++) {
-      this.intensityMaps.push(
-        ArtUtils.getImageIntensityMap(
-          images[i].data.data,
-          images[i].data.width,
-          images[i].data.height,
-          settings.intensityMode
-        )
-      );
-    }
-    this.maxIntensityInRadius =
-      (2 * settings.intensityRadius) ** 2 * settings.brightness;
-    this.integralImages = [];
-    for (let i = 0; i < images.length; i++) {
-      this.integralImages.push(
-        ArtUtils.calculateIntegralImageFromMap(
-          this.intensityMaps[i],
-          images[i].data.width,
-          images[i].data.height,
-          settings.intensityMode
-        )
-      );
-    }
+
     this.agents = [];
     this.agentCount = 0;
     this.capped = false;
@@ -99,11 +66,8 @@ class LineArt {
         var a = document.createElement("a");
         a.target = "_blank";
 
+        this.images = [];
         for (let i = 0; i < images.length; i++) {
-          //   a.href = this.images[i].src;
-          //   var event = new MouseEvent("click");
-          //   a.dispatchEvent(event);
-
           this.images[i] = p.loadImage(images[i].src);
         }
       };
@@ -167,8 +131,81 @@ class LineArt {
     this.p5 = new p5(s, elementId);
   }
 
+  calculateImages() {
+    const width = this.settings.width;
+    const height = this.settings.height;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+
+    const dataImages = [];
+    for (let i = 0; i < this.rawImages.length; i++) {
+      context.drawImage(this.rawImages[i], 0, 0, width, height);
+      dataImages[i] = context.getImageData(0, 0, width, height);
+    }
+
+    this.intensityMaps = [];
+    for (let i = 0; i < dataImages.length; i++) {
+      this.intensityMaps.push({
+        width: width,
+        height: height,
+        data: ArtUtils.getImageIntensityMap(
+          dataImages[i].data,
+          dataImages[i].width,
+          dataImages[i].height,
+          this.settings.intensityMode
+        ),
+      });
+    }
+
+    this.integralImages = [];
+    for (let i = 0; i < dataImages.length; i++) {
+      this.integralImages.push({
+        width: width,
+        height: height,
+        data: ArtUtils.calculateIntegralImageFromMap(
+          this.intensityMaps[i].data,
+          dataImages[i].width,
+          dataImages[i].height,
+          this.settings.intensityMode
+        ),
+      });
+    }
+
+    if (this.p5) {
+      this.p5.resizeCanvas(width, height);
+    }
+  }
+
+  getCurrentIntensityMap() {
+    let curMap = this.intensityMaps[this.imageIndex];
+    if (
+      this.settings.width !== curMap.width ||
+      this.settings.height !== curMap.height
+    ) {
+      this.calculateImages();
+    }
+
+    return this.intensityMaps[this.imageIndex].data;
+  }
+
+  getCurrentIntegralImage() {
+    let curImage = this.integralImages[this.imageIndex];
+    if (
+      this.settings.width !== curImage.width ||
+      this.settings.height !== curImage.height
+    ) {
+      this.calculateImages();
+    }
+
+    return this.integralImages[this.imageIndex].data;
+  }
+
   playPause() {
-    console.log(this.agentCount);
+    console.log("Agent Count: " + this.agentCount.toString());
+
     if (this.p5.isLooping()) {
       this.p5.noLoop();
       if (this.imageInterval) {
@@ -234,7 +271,7 @@ class LineArt {
     let radius = this.settings.intensityRadius;
     let width = this.settings.width;
     let height = this.settings.height;
-    let iimg = this.integralImages[this.imageIndex];
+    let iimg = this.getCurrentIntegralImage();
     if (!iimg || !iimg.length) {
       return 0.1;
     }
@@ -261,7 +298,7 @@ class LineArt {
     // console.log(sum);
 
     return (
-      ArtUtils.inverseLerp(0, this.maxIntensityInRadius, sum) **
+      ArtUtils.inverseLerp(0, this.settings.maxIntensityInRadius, sum) **
       this.settings.contrast
     );
   }
@@ -379,7 +416,7 @@ class Agent {
   }
 
   getAngleBasedOnColorInRadius() {
-    const currentImageIntMap = this.art.intensityMaps[this.art.imageIndex];
+    const currentImageIntMap = this.art.getCurrentIntensityMap();
     const sightRadius = this.art.settings.sightRadius;
     const width = this.art.settings.width;
     const height = this.art.settings.height;
@@ -436,7 +473,8 @@ class ArtSettings {
     this.intensityRadius = options.intensityRadius || 10;
     this.sightRadius = options.sightRadius || 30;
     this.contrast = options.contrast || 1;
-    this.brightness = options.brightness || 1;
+    this.maxIntensityInRadius =
+      (2 * this.intensityRadius) ** 2 * (options.brightness || 1);
 
     this.lineWidth = options.lineWidth || 1;
     this.pointWidth = options.pointWidth || 6;
